@@ -12,9 +12,13 @@ export default function Card({ card, dispatch }: CardProps) {
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState(card.title);
 
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
-    id: card.id,
-  });
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: card.id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -31,7 +35,6 @@ export default function Card({ card, dispatch }: CardProps) {
     setEditing(false);
   };
 
-  // Random priority color (you can make it data-driven later)
   const priorityColors = ['border-yellow-500', 'border-orange-500', 'border-green-500'];
   const randomColor = priorityColors[Math.floor(Math.random() * priorityColors.length)];
 
@@ -41,7 +44,7 @@ export default function Card({ card, dispatch }: CardProps) {
       style={style}
       {...attributes}
       {...listeners}
-      className={`group relative bg-white p-4 rounded-lg shadow-sm border-l-4 ${randomColor} hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing`}
+      className={`group relative bg-white p-4 rounded-lg shadow-sm border-l-4 ${randomColor} hover:shadow-md transition-shadow cursor-grab active:cursor-grabbing select-none`}
     >
       {editing ? (
         <input
@@ -60,11 +63,11 @@ export default function Card({ card, dispatch }: CardProps) {
         />
       ) : (
         <div className="flex justify-between items-start gap-2">
-          {/* Title – double-click only for edit */}
+          {/* Title area – double-click to edit */}
           <p
             className="flex-1 text-sm font-medium text-gray-800 cursor-pointer line-clamp-3"
             onDoubleClick={(e) => {
-              e.stopPropagation();   // ← Prevent bubbling to drag
+              e.stopPropagation();
               e.preventDefault();
               setTitle(card.title);
               setEditing(true);
@@ -73,22 +76,30 @@ export default function Card({ card, dispatch }: CardProps) {
             {card.title}
           </p>
 
-          {/* Delete button – single click + stop propagation */}
-          <button
-            type="button"  // ← Prevents form-like behavior
-            onClick={(e) => {
-              e.stopPropagation();    // ← Critical: stops drag/parent events
-              e.preventDefault();
-              console.log('Delete single-click triggered for card:', card.id); // Debug
+          {/* Delete button – completely isolated from drag */}
+          <div className="relative z-20 pointer-events-auto">
+            <button
+              type="button"
+              onPointerDown={(e) => {
+                e.stopPropagation();           // Block drag start
+                e.preventDefault();
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                e.nativeEvent.stopImmediatePropagation();
 
-              if (window.confirm('Delete this card?')) {
-                dispatch({ type: 'DELETE_CARD', payload: { cardId: card.id } });
-              }
-            }}
-            className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 text-xl font-bold transition-opacity"
-          >
-            🗑
-          </button>
+                console.log('Delete clicked (single) for card:', card.id);
+
+                if (window.confirm('Delete this card?')) {
+                  dispatch({ type: 'DELETE_CARD', payload: { cardId: card.id } });
+                }
+              }}
+              className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 text-2xl font-bold transition-opacity"
+            >
+              🗑
+            </button>
+          </div>
         </div>
       )}
     </div>
